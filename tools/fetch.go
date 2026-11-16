@@ -301,12 +301,48 @@ func (a *App) refreshMarkets() {
 							chainNote = "Old ACT history unavailable or failed conversion checks: " + err.Error()
 						}
 					}
+					// A single unverified extreme observation must not make the
+					// entire holding disappear. Retain only the contiguous segment
+					// after the LAST >50% GBP-level jump; never bridge that jump.
+					// The discarded history is explicitly disclosed in metadata.
+					fullCount := len(c.Rows)
 					p, m, dropped, e := convert(c, fx[c.Currency])
+					truncationNote := ""
+					if e != nil && strings.Contains(e.Error(), "one-observation move above 50%") {
+						// Locate breaks in GBP units (FX can contribute to a break).
+						lastBreak := -1
+						prev := 0.0
+						for i, r := range c.Rows {
+							scale := 1.0
+							if c.Currency == "GBX" {
+								scale = .01
+							} else if c.Currency != "GBP" {
+								fxp, ok := fxAt(fx[c.Currency], r.Date)
+								if !ok {
+									continue
+								}
+								scale = fxp.Value
+							}
+							v := r.Adjusted * scale
+							if !finitePositive(v) {
+								continue
+							}
+							if prev > 0 && math.Abs(v/prev-1) > .5 {
+								lastBreak = i
+							}
+							prev = v
+						}
+						if lastBreak > 0 && len(c.Rows)-lastBreak >= 30 {
+							truncationNote = fmt.Sprintf("Unverified >50%% jump at %s: %d earlier observations excluded; history begins after break. Do not interpret this as full ten-year history or a validated corporate-action adjustment.", c.Rows[lastBreak].Date, lastBreak)
+							c.Rows = c.Rows[lastBreak:]
+							p, m, dropped, e = convert(c, fx[c.Currency])
+						}
+					}
 					if e != nil {
 						a.failure(spec.Ticker, e)
 						return
 					}
-					meta := map[string]any{"source": "Yahoo Finance provider-adjusted close; automatic retrieval", "sourceURL": c.URL, "providerTicker": spec.Provider, "currency": c.Currency, "first": p[0].Date, "last": p[len(p)-1].Date, "rows": len(p), "retrieved_utc": time.Now().UTC().Format(time.RFC3339), "basis": "Dividend/split-adjusted market-price total-return proxy in GBP; investor withholding taxes not reconstructed", "fx_dropped": dropped, "stale": false, "corporateActionChain": chained, "continuityNote": chainNote}
+					meta := map[string]any{"source": "Yahoo Finance provider-adjusted close; automatic retrieval", "sourceURL": c.URL, "providerTicker": spec.Provider, "currency": c.Currency, "first": p[0].Date, "last": p[len(p)-1].Date, "rows": len(p), "retrieved_utc": time.Now().UTC().Format(time.RFC3339), "basis": "Dividend/split-adjusted market-price total-return proxy in GBP; investor withholding taxes not reconstructed", "fx_dropped": dropped, "stale": false, "corporateActionChain": chained, "continuityNote": chainNote, "originalRows": fullCount, "truncationWarning": truncationNote}
 					if chained {
 						meta["chainAuthority"] = "https://www.alzchem.com/en/investor-relations/stock/"
 						meta["chainMethod"] = "Verified 1:1 technical conversion on 2026-09-17; explicit raw-price bridge between adjusted-return segments"
@@ -318,6 +354,12 @@ func (a *App) refreshMarkets() {
 					last, _ := time.Parse("2006-01-02", p[len(p)-1].Date)
 					if time.Since(last) > 7*24*time.Hour {
 						a.failure(spec.Ticker, fmt.Errorf("provider history ends %s; cached but stale", p[len(p)-1].Date))
+					}
+					if truncationNote != "" {
+						a.failure("ACT_history_warning", fmt.Errorf("%s", truncationNote))
+					}
+					if spec.Ticker == "KAP.L" && len(p) < 252 {
+						a.failure("KAP_history_warning", fmt.Errorf("provider supplied only %d daily observations; older Kazatomprom GDR history unavailable from this symbol; no pre-inception values generated", len(p)))
 					}
 					if chainNote != "" {
 						a.failure("ACT_continuity", fmt.Errorf("%s", chainNote))
@@ -475,6 +517,12 @@ func (a *App) refreshMacro() {
 			defer func() { <-sem; a.progress("Processed " + s.ID) }()
 			p, src, err := a.fred(s.Series)
 			if err != nil {
+				a.mu.Lock()
+				if m := a.payload.Meta[s.ID]; m != nil {
+					m["stale"] = true
+					m["refreshError"] = err.Error()
+				}
+				a.mu.Unlock()
 				a.failure(s.ID, err)
 				return
 			}
@@ -484,7 +532,7 @@ func (a *App) refreshMacro() {
 			}
 			a.mu.Lock()
 			a.payload.Factors[s.ID] = v
-			a.payload.Meta[s.ID] = map[string]any{"source": "FRED / originating institution", "sourceURL": src, "retrieved_utc": time.Now().UTC().Format(time.RFC3339), "basis": "Observed market series; current vintage, not point-in-time economic release data"}
+			a.payload.Meta[s.ID] = map[string]any{"source": "FRED / originating institution", "sourceURL": src, "retrieved_utc": time.Now().UTC().Format(time.RFC3339), "basis": "Observed market series; current vintage, not point-in-time economic release data", "stale": false}
 			a.mu.Unlock()
 		}(spec)
 	}
@@ -569,4 +617,3 @@ func (a *App) refreshNews() {
 	}
 	wg.Wait()
 }
-
