@@ -1,0 +1,166 @@
+{
+  "instruments": [
+    {
+      "ticker": "KNSL",
+      "provider_ticker": "KNSL",
+      "expected_currency": "USD",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "TBCG.L",
+      "provider_ticker": "TBCG.L",
+      "expected_currency": "GBX",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "EGO",
+      "provider_ticker": "EGO",
+      "expected_currency": "USD",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "AVGO",
+      "provider_ticker": "AVGO",
+      "expected_currency": "USD",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "EWSP.L",
+      "provider_ticker": "EWSP.L",
+      "expected_currency": "GBP",
+      "note": "GBP trading line of unhedged USD-accumulating class; do not divide the quoted GBP price by 100.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "ZPRX.DE",
+      "provider_ticker": "ZPRX.DE",
+      "expected_currency": "EUR",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "VIE.PA",
+      "provider_ticker": "VIE.PA",
+      "expected_currency": "EUR",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "ADYEN.AS",
+      "provider_ticker": "ADYEN.AS",
+      "expected_currency": "EUR",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "GD",
+      "provider_ticker": "GD",
+      "expected_currency": "USD",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "ADBE",
+      "provider_ticker": "ADBE",
+      "expected_currency": "USD",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "BIPS.L",
+      "provider_ticker": "BIPS.L",
+      "expected_currency": "GBX",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "JAGI.L",
+      "provider_ticker": "JAGI.L",
+      "expected_currency": "GBX",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "KAP.L",
+      "provider_ticker": "KAP.L",
+      "expected_currency": "USD",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "TEZNY",
+      "provider_ticker": "TEZNY",
+      "expected_currency": "USD",
+      "note": "Unsponsored ADR: 1 ADS = 3 ordinary shares; USD quote, Italian business.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "NOV.DE",
+      "provider_ticker": "NOV.DE",
+      "expected_currency": "EUR",
+      "note": "Verified Xetra NOV listing of Novo Nordisk B shares, ISIN DK0062498333. EUR quotation; match the broker ISIN and provider metadata.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "SGLN.L",
+      "provider_ticker": "SGLN.L",
+      "expected_currency": "GBX",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "THEON.AS",
+      "provider_ticker": "THEON.AS",
+      "expected_currency": "EUR",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "ACT.DE",
+      "provider_ticker": "ACT0.DE",
+      "expected_currency": "EUR",
+      "note": "Issuer confirmed ACT0 from 17 September 2026. Original ACT.DE retained as portfolio ID. Corporate-action continuity requires review.",
+      "continuity_check": true
+    },
+    {
+      "ticker": "SSLN.L",
+      "provider_ticker": "SSLN.L",
+      "expected_currency": "GBX",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "MGCI.L",
+      "provider_ticker": "MGCI.L",
+      "expected_currency": "GBX",
+      "note": "Snapshot units retained. Provider metadata and complete corporate-action history must be checked on data refresh.",
+      "continuity_check": false
+    },
+    {
+      "ticker": "SWDA.L",
+      "provider_ticker": "SWDA.L",
+      "expected_currency": "GBX",
+      "note": "GBP trading line commonly quoted in pence by this provider; verify metadata. ETF proxy, not exact MSCI index."
+    },
+    {
+      "ticker": "IGLH.L",
+      "provider_ticker": "IGLH.L",
+      "expected_currency": "GBP",
+      "note": "GBP-hedged distributing government-bond ETF; adjusted-close distributions required. Verify quote units."
+    }
+  ],
+  "fx": {
+    "USD": {
+      "provider_ticker": "GBPUSD=X",
+      "invert": true
+    },
+    "EUR": {
+      "provider_ticker": "GBPEUR=X",
+      "invert": true
+    }
+  }
+}
