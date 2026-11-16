@@ -3,6 +3,7 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/tls"
 	"embed"
 	"encoding/hex"
 	"encoding/json"
@@ -10,9 +11,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -93,16 +96,37 @@ func newApp(dir string) *App {
 	a.status = Status{Message: "Starting automatic retrieval", Revision: a.payload.Revision, Errors: map[string]string{}}
 	return a
 }
+
+// HTTP/1.1 transport is used for FRED: GitHub runners have experienced
+// intermittent HTTP/2 stream resets on FRED's graph CSV endpoint.
 func (a *App) rawGet(u string) ([]byte, error) {
 	var last error
-	for attempt := 0; attempt < 2; attempt++ {
+	isFred := strings.Contains(u, "fred.stlouisfed.org/")
+	client := a.client
+	if isFred {
+		client = &http.Client{Timeout: 35 * time.Second, Transport: &http.Transport{
+			Proxy:             http.ProxyFromEnvironment,
+			DialContext:       (&net.Dialer{Timeout: 12 * time.Second, KeepAlive: 20 * time.Second}).DialContext,
+			TLSClientConfig:   &tls.Config{MinVersion: tls.VersionTLS12},
+			ForceAttemptHTTP2: false,
+			TLSNextProto:      map[string]func(string, *tls.Conn) http.RoundTripper{},
+		}}
+	}
+	attempts := 3
+	if isFred {
+		attempts = 5
+	}
+	for attempt := 0; attempt < attempts; attempt++ {
+		if attempt > 0 {
+			time.Sleep(time.Duration(attempt*attempt) * 450 * time.Millisecond)
+		}
 		req, e := http.NewRequest("GET", u, nil)
 		if e != nil {
 			return nil, e
 		}
-		req.Header.Set("User-Agent", "Mozilla/5.0 PortfolioObservatory/2.0 personal-research")
+		req.Header.Set("User-Agent", "Mozilla/5.0 PortfolioObservatory/2.1 personal-research")
 		req.Header.Set("Accept", "application/json,text/csv,application/xml,text/xml,*/*")
-		res, e := a.client.Do(req)
+		res, e := client.Do(req)
 		if e != nil {
 			last = e
 			continue
@@ -115,7 +139,7 @@ func (a *App) rawGet(u string) ([]byte, error) {
 		}
 		if res.StatusCode != 200 {
 			last = fmt.Errorf("provider returned HTTP %d", res.StatusCode)
-			if res.StatusCode == 429 {
+			if res.StatusCode == 429 || (res.StatusCode >= 400 && res.StatusCode < 500 && res.StatusCode != 408) {
 				return nil, last
 			}
 			continue
@@ -262,4 +286,3 @@ func main() {
 	}
 	fmt.Printf("DATA_READY=%s\n", *out)
 }
-
