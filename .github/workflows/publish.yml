@@ -1,0 +1,80 @@
+name: Update Portfolio Observatory
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Spread away from :00 to reduce GitHub scheduling delays.
+    - cron: '17 7,13,20 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: portfolio-pages
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - name: Load repository
+        uses: actions/checkout@v4
+
+      - name: Install Go for the market-data collector
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/go.mod
+          cache: false
+
+      - name: Restore last successful market-data cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .market-cache
+          key: portfolio-market-${{ github.repository_id }}-${{ github.run_id }}
+          restore-keys: |
+            portfolio-market-${{ github.repository_id }}-
+
+      - name: Automatically retrieve adjusted histories, rates and official releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p site/data .market-cache
+          cp index.html site/index.html
+          touch site/.nojekyll
+          (cd tools && go run . -cache-dir ../.market-cache -out ../site/data/market.json)
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('site/data/market.json').read_text())
+          covered=sum(1 for v in p['history'].values() if len(v)>3)
+          print('Data series:',covered,'| marks:',len(p['marks']),'| warnings:',len(p['errors']))
+          if not p.get('retrieved'):
+              raise SystemExit('Missing retrieval timestamp')
+          PY
+
+      - name: Preserve previous valid histories for the next scheduled run
+        uses: actions/cache/save@v4
+        with:
+          path: .market-cache
+          key: portfolio-market-${{ github.repository_id }}-${{ github.run_id }}
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+      - name: Publish website
+        id: publish
+        uses: actions/deploy-pages@v4
+
